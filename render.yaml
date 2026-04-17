@@ -1,0 +1,30 @@
+# Render.com deployment config for tryghost API
+# This file controls how Render builds and runs the backend
+
+services:
+  - type: web
+    name: tryghost-api
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm install
+    startCommand: node src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: SUPABASE_URL
+        sync: false   # set in Render dashboard
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SOLANA_RPC_URL
+        value: https://api.devnet.solana.com
+      - key: SOLANA_NETWORK
+        value: devnet
+      - key: PROGRAM_ID
+        sync: false   # set after anchor deploy
+      - key: CORS_ORIGIN
+        value: https://tryghost.netlify.app  # update after netlify deploy
