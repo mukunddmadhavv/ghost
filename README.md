@@ -40,12 +40,24 @@ Copy `.env.example` files in both `apps/web` and `apps/api` and fill in your val
 - **Backend** → Render (root dir: `apps/api`, start: `node src/index.js`)
 - **Solana Program** → `anchor deploy --provider.cluster devnet`
 
+## Key Features
+
+- 🛡️ **Hashed API Keys**: Secure, one-time reveal secret keys for agent authentication.
+- ⛓️ **On-Chain Policy Engine**: Spending limits and allowlists enforced by Solana PDAs.
+- 🤖 **Agent Vaults**: Program-derived addresses (PDAs) dedicated to autonomous bot capital.
+- 📜 **Live Audit Trail**: real-time streaming of all approved and rejected agent transactions.
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 18, Vite, Tailwind CSS v3 |
-| Backend | Node.js, Express.js |
+| Backend | Node.js, Express.js, SHA-256 Hashing |
 | Database | Supabase (PostgreSQL) |
-| Blockchain | Solana Devnet, Anchor |
+| Blockchain | Solana Devnet, Anchor (Rust) |
 | Deployment | Netlify + Render |
+
+
+
+
+

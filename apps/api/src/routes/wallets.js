@@ -48,10 +48,14 @@ router.get('/', requireAuth, async (req, res) => {
     if (error) throw error;
 
     const walletsWithBalance = await Promise.allSettled(
-      data.map(async (w) => ({
-        ...w,
-        balance_sol: await getBalance(w.pda_address).catch(() => 0),
-      }))
+      data.map(async (w) => {
+        const balance = await getBalance(w.pda_address).catch(() => 0);
+        let onChain = null;
+        if (w.pda_address !== 'pending_deploy') {
+          onChain = await fetchWalletOnChain(w.pda_address).catch(() => null);
+        }
+        return { ...w, balance_sol: balance, on_chain: onChain };
+      })
     );
 
     res.json({

@@ -9,6 +9,8 @@ const authRoutes = require('./routes/auth');
 const walletRoutes = require('./routes/wallets');
 const paymentRoutes = require('./routes/payments');
 const auditRoutes = require('./routes/audit');
+const idlRoutes = require('./routes/idl');
+const keyRoutes = require('./routes/keys');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -48,6 +50,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/wallets', walletRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/idl', idlRoutes);
+app.use('/api/keys', keyRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

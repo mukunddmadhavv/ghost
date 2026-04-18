@@ -5,14 +5,14 @@ import LandingPage from './pages/Landing/LandingPage.jsx'
 import DashboardPage from './pages/Dashboard/DashboardPage.jsx'
 import WalletDetailPage from './pages/WalletDetail/WalletDetailPage.jsx'
 import AuditLogPage from './pages/AuditLog/AuditLogPage.jsx'
-import DemoPage from './pages/Demo/DemoPage.jsx'
 import DocsPage from './pages/Docs/DocsPage.jsx'
+import ApiSettings from './pages/Dashboard/ApiSettings.jsx'
 import AppLayout from './layouts/AppLayout.jsx'
 
 export default function App() {
   return (
     <WalletAdapterProvider>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Toaster
           position="top-right"
           toastOptions={{
@@ -35,8 +35,9 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/wallet/:id" element={<WalletDetailPage />} />
             <Route path="/audit" element={<AuditLogPage />} />
-            <Route path="/demo" element={<DemoPage />} />
             <Route path="/docs" element={<DocsPage />} />
+            <Route path="/settings" element={<ApiSettings />} />
+            <Route path="/demo" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
           {/* Fallback */}

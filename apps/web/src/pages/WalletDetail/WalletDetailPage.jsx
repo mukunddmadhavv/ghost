@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PolicyEditor from '../../components/PolicyEditor.jsx'
+import { RevealCopy } from '../../components/ui/reveal-copy'
+import { Badge } from '../../components/ui/badge'
 
 const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
@@ -63,7 +65,7 @@ export default function WalletDetailPage() {
   if (!wallet) return <div className="p-8 text-gray-400">Wallet not found</div>
 
   return (
-    <div className="p-8 animate-fade-in max-w-4xl">
+    <div className="p-4 sm:p-8 animate-fade-in max-w-4xl">
       {/* ── Breadcrumb ────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
         <Link to="/dashboard" className="hover:text-gray-700 transition-colors">Dashboard</Link>
@@ -72,19 +74,30 @@ export default function WalletDetailPage() {
       </div>
 
       {/* ── Header ────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-8">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl">🤖</div>
-          <div>
-            <h1 className="text-2xl font-black text-gray-900">{wallet.agent_name}</h1>
-            <p className="font-mono text-xs text-gray-400 mt-0.5">{wallet.pda_address}</p>
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl flex-shrink-0">🤖</div>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 truncate">{wallet.agent_name}</h1>
+            <div className="mt-1.5 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">PDA:</span>
+                <RevealCopy value={wallet.pda_address} chars={8} />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">ID:</span>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-100 font-mono text-[10px] text-gray-500">
+                  {wallet.id}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right bg-white p-4 rounded-xl border border-gray-100 sm:border-0 sm:p-0">
           <p className="text-xs text-gray-400 mb-0.5">Balance</p>
-          <p className="text-3xl font-black text-gray-900">
+          <p className="text-2xl sm:text-3xl font-black text-gray-900">
             {(wallet.balance_sol || 0).toFixed(4)}
-            <span className="text-lg font-semibold text-gray-400 ml-1">SOL</span>
+            <span className="text-sm sm:text-lg font-semibold text-gray-400 ml-1">SOL</span>
           </p>
         </div>
       </div>
@@ -134,19 +147,25 @@ function TransactionHistory({ walletId }) {
         <h3 className="font-bold text-gray-900">Transaction History</h3>
       </div>
       {logs.map(log => (
-        <div key={log.id} className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className={log.status === 'APPROVED' ? 'badge-approved' : 'badge-rejected'}>
-              {log.status === 'APPROVED' ? '✅ Approved' : '❌ Rejected'}
-            </span>
-            <div>
-              <p className="text-sm font-medium text-gray-900">{log.description || 'Payment'}</p>
-              <p className="font-mono text-xs text-gray-400 truncate max-w-[200px]">{log.recipient_address}</p>
+        <div key={log.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="mt-1 sm:mt-0 flex-shrink-0">
+              {log.status === 'APPROVED' ? (
+                <Badge variant="success">Approved</Badge>
+              ) : (
+                <Badge variant="destructive">Rejected</Badge>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{log.description || 'Payment'}</p>
+              <div className="mt-1">
+                <RevealCopy value={log.recipient_address} chars={6} />
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-bold text-gray-900">{log.amount_sol} SOL</p>
-            <p className="text-xs text-gray-400">{new Date(log.created_at).toLocaleString()}</p>
+          <div className="flex sm:flex-col justify-between items-end gap-1 px-3 sm:px-0 py-2 sm:py-0 bg-gray-50 sm:bg-transparent rounded-lg">
+            <p className="text-sm font-black text-gray-900 whitespace-nowrap">{log.amount_sol} SOL</p>
+            <p className="text-[10px] text-gray-400">{new Date(log.created_at).toLocaleDateString()} · {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
           </div>
         </div>
       ))}

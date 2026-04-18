@@ -30,20 +30,30 @@ function loadProgram() {
   const idl = JSON.parse(fs.readFileSync(IDL_PATH, 'utf8'));
   const connection = getConnection();
 
-  // Use a dummy wallet for read-only operations;
-  // real tx signing uses the user's wallet on frontend
-  const dummyWallet = {
+  // Load Relayer Wallet to pay for smart contract execution gas fees
+  let wallet = {
     publicKey: PublicKey.default,
     signTransaction: async (tx) => tx,
     signAllTransactions: async (txs) => txs,
   };
 
-  const provider = new anchor.AnchorProvider(connection, dummyWallet, {
+  try {
+    const keypairPath = path.join(require('os').homedir(), '.config', 'solana', 'id.json');
+    if (fs.existsSync(keypairPath)) {
+      const secret = JSON.parse(fs.readFileSync(keypairPath, 'utf8'));
+      const keypair = Keypair.fromSecretKey(new Uint8Array(secret));
+      wallet = new anchor.Wallet(keypair);
+    }
+  } catch (err) {
+    console.warn('⚠️ Could not load local wallet, using dummy wallet.', err.message);
+  }
+
+  const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: 'confirmed',
     preflightCommitment: 'confirmed',
   });
 
-  _program = new anchor.Program(idl, new PublicKey(PROGRAM_ID), provider);
+  _program = new anchor.Program(idl, provider);
   return _program;
 }
 

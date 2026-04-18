@@ -16,7 +16,7 @@ router.get('/', requireAuth, async (req, res) => {
 
     const { data, error, count } = await supabase
       .from('audit_logs')
-      .select('*, agent_wallets(agent_name)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('owner_id', req.user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);

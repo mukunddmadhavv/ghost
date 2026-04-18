@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import logo from '../../assets/logo.webp'
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* ── Navbar ────────────────────────────────────────────────── */}
       <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-black text-sm">G</div>
-          <span className="font-black text-gray-900 text-lg tracking-tight">tryghost.dev</span>
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="tryghost logo" className="h-10 w-auto object-contain" />
         </div>
         <div className="flex items-center gap-4">
           <Link to="/docs" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Docs</Link>

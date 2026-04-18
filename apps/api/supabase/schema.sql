@@ -55,12 +55,25 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ─── API Keys ──────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS api_keys (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  owner_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name          TEXT NOT NULL,
+  key_hash      TEXT NOT NULL UNIQUE,
+  key_mask      TEXT NOT NULL,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at  TIMESTAMPTZ
+);
+
 -- ─── Indexes ──────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_wallets_owner   ON agent_wallets(owner_id);
 CREATE INDEX IF NOT EXISTS idx_audit_owner     ON audit_logs(owner_id);
 CREATE INDEX IF NOT EXISTS idx_audit_wallet    ON audit_logs(wallet_id);
 CREATE INDEX IF NOT EXISTS idx_audit_status    ON audit_logs(status);
 CREATE INDEX IF NOT EXISTS idx_audit_created   ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_apikeys_owner   ON api_keys(owner_id);
+CREATE INDEX IF NOT EXISTS idx_apikeys_hash    ON api_keys(key_hash);
 
 -- ─── Seed demo data (runs only if table is empty) ─────────────────────────────
 INSERT INTO agent_wallets (id, owner_id, agent_name, owner_public_key, pda_address, policy)

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { SplitToEdit } from './ui/split-to-edit'
 
 /**
  * PolicyEditor — The main hackathon WOW component
@@ -172,7 +173,7 @@ export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }
           </div>
         </div>
         {/* Quick presets */}
-        <div className="flex gap-2 mt-3">
+        <div className="flex flex-wrap gap-2 mt-3">
           {[0.1, 0.5, 1, 2, 5].map(v => (
             <button
               key={v}
@@ -222,26 +223,27 @@ export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }
           />
         </div>
         {policy.timeRestriction?.enabled && (
-          <div className="flex items-center gap-4 mt-3 animate-fade-in">
-            <div>
-              <label className="label text-xs">Start Hour (UTC)</label>
-              <TimeHourSelect
-                value={policy.timeRestriction.startHour}
-                onChange={v => updateTimeRestriction('startHour', v)}
-              />
-            </div>
-            <span className="text-gray-400 text-sm mt-5">→</span>
-            <div>
-              <label className="label text-xs">End Hour (UTC)</label>
-              <TimeHourSelect
-                value={policy.timeRestriction.endHour}
-                onChange={v => updateTimeRestriction('endHour', v)}
-              />
-            </div>
-            <div className="mt-5">
-              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-medium">
-                {policy.timeRestriction.startHour}:00 – {policy.timeRestriction.endHour}:00 UTC
-              </span>
+          <div className="mt-4 animate-fade-in">
+            <p className="text-xs text-gray-400 mb-3">Active payment window (UTC hours)</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <SplitToEdit
+                  label="Start"
+                  initialHours={policy.timeRestriction.startHour}
+                  onSave={v => updateTimeRestriction('startHour', v)}
+                />
+                <span className="text-gray-300 text-lg font-light mt-5">→</span>
+                <SplitToEdit
+                  label="End"
+                  initialHours={policy.timeRestriction.endHour}
+                  onSave={v => updateTimeRestriction('endHour', v)}
+                />
+              </div>
+              <div className="mt-2 sm:mt-5">
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1.5 rounded-lg font-semibold whitespace-nowrap">
+                  {String(policy.timeRestriction.startHour).padStart(2,'0')}:00 – {String(policy.timeRestriction.endHour).padStart(2,'0')}:00 UTC
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -330,22 +332,5 @@ function Toggle({ value, onChange, activeColor = 'bg-blue-500' }) {
           ${value ? 'translate-x-5' : 'translate-x-0'}`}
       />
     </button>
-  )
-}
-
-/* ── TimeHourSelect Component ──────────────────────────────────────────────── */
-function TimeHourSelect({ value, onChange }) {
-  return (
-    <select
-      value={value}
-      onChange={e => onChange(parseInt(e.target.value))}
-      className="input !w-[120px] !py-2"
-    >
-      {Array.from({ length: 24 }, (_, i) => (
-        <option key={i} value={i}>
-          {String(i).padStart(2, '0')}:00 UTC
-        </option>
-      ))}
-    </select>
   )
 }

@@ -1,8 +1,12 @@
 const express = require('express');
 const { z } = require('zod');
-const { LAMPORTS_PER_SOL } = require('@solana/web3.js');
+const { LAMPORTS_PER_SOL, PublicKey } = require('@solana/web3.js');
+const { BN } = require('@coral-xyz/anchor');
+const { loadProgram } = require('../lib/anchor');
 const supabase = require('../lib/supabase');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
+const { requireApiKey } = require('../middleware/apiKeyAuth');
+const { broadcastAuditEvent } = require('./audit');
 
 const router = express.Router();
 
@@ -67,36 +71,24 @@ function validatePolicy(wallet, amountSol, recipientAddress) {
 }
 
 // ─── POST /api/payments/execute ───────────────────────────────────────────────
-router.post('/execute', optionalAuth, async (req, res) => {
+router.post('/execute', requireApiKey, async (req, res) => {
   try {
     const body = ExecutePaymentSchema.parse(req.body);
 
-    // Fetch wallet (no auth check for demo mode)
-    const query = supabase
+    // Fetch wallet (Strictly scoped to the API key owner)
+    const { data: wallet, error: walletErr } = await supabase
       .from('agent_wallets')
       .select('*')
-      .eq('id', body.walletId);
-
-    if (req.user) query.eq('owner_id', req.user.id);
-
-    const { data: wallet, error: walletErr } = await query.single();
+      .eq('id', body.walletId)
+      .eq('owner_id', req.user.id)
+      .single();
 
     if (walletErr || !wallet) {
-      // Demo mode: simulate with default policy
-      const demoPolicy = {
-        maxSpendPerDay: 0.5,
-        allowedRecipients: [],
-        timeRestriction: { enabled: false },
-        requireApprovalAbove: 1.0,
-        emergencyPaused: false,
-      };
-      const demoWallet = { policy: demoPolicy, total_spent_today: 0, last_reset_at: new Date().toISOString(), agent_name: 'Demo Agent' };
-      const { allowed, rejectionReason } = validatePolicy(demoWallet, body.amountSol, body.recipientAddress);
-
-      if (!allowed) {
-        return res.status(403).json({ status: 'REJECTED', reason: rejectionReason, message: '❌ Transaction rejected by policy engine' });
-      }
-      return res.json({ status: 'APPROVED', txSignature: `demo_${Date.now()}`, message: '✅ Payment executed (demo mode)' });
+      return res.status(404).json({ 
+        status: 'REJECTED', 
+        reason: 'WALLET_NOT_FOUND', 
+        message: '❌ Agent wallet not found or access denied.' 
+      });
     }
 
     if (!wallet.is_active) return res.status(400).json({ error: 'Wallet is inactive' });
@@ -118,7 +110,8 @@ router.post('/execute', optionalAuth, async (req, res) => {
     };
 
     if (!allowed) {
-      await supabase.from('audit_logs').insert(auditEntry);
+      const { data: insertedLog } = await supabase.from('audit_logs').insert(auditEntry).select().single();
+      if (insertedLog) broadcastAuditEvent(wallet.owner_id, insertedLog);
       return res.status(403).json({
         status: 'REJECTED',
         reason: rejectionReason,
@@ -126,14 +119,46 @@ router.post('/execute', optionalAuth, async (req, res) => {
       });
     }
 
-    // ── On-chain execution placeholder ──────────────────────────────────────
-    // When anchor deployed + wallet funded, send real tx:
-    // const program = loadProgram();
-    // const txSig = await program.methods.executePayment(new BN(amountLamports))
-    //   .accounts({ wallet: pdaPublicKey, recipient: new PublicKey(body.recipientAddress) })
-    //   .rpc();
-    const mockTxSig = `ghost_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    auditEntry.tx_signature = mockTxSig;
+    // ── On-chain execution ────────────────────────────────────────────────────
+    let txSig = null;
+    const program = loadProgram();
+
+    if (program && wallet.pda_address !== 'pending_deploy') {
+      try {
+        console.log(`⛓️ Executing Anchor Payment on PDA: ${wallet.pda_address}`);
+        txSig = await program.methods.executePayment(new BN(auditEntry.amount_lamports))
+          .accounts({
+            wallet: new PublicKey(wallet.pda_address),
+            recipient: new PublicKey(body.recipientAddress),
+          })
+          .rpc();
+        console.log(`✅ On-chain transaction successful! Signature: ${txSig}`);
+      } catch (chainErr) {
+        console.error('❌ On-chain tx failed:', chainErr);
+        // Record failed blockchain tx
+        const { data: insertedLog } = await supabase.from('audit_logs').insert({
+          ...auditEntry,
+          status: 'REJECTED',
+          rejection_reason: `ON_CHAIN_ERROR: ${chainErr.message}`
+        }).select().single();
+
+        if (insertedLog) broadcastAuditEvent(wallet.owner_id, insertedLog);
+
+        return res.status(500).json({
+          status: 'REJECTED',
+          reason: `ON_CHAIN_ERROR: ${chainErr.message}`,
+          message: '❌ Transaction rejected by Solana smart contract'
+        });
+      }
+    } else {
+      return res.status(400).json({
+        status: 'REJECTED',
+        reason: 'WALLET_NOT_INITIALIZED',
+        message: '❌ This agent wallet has not been initialized on-chain yet.'
+      });
+    }
+
+    auditEntry.tx_signature = txSig;
 
     // Update daily spend counter (reset if 24h passed)
     const hoursSinceReset = (Date.now() - new Date(wallet.last_reset_at).getTime()) / 3_600_000;
@@ -144,15 +169,16 @@ router.post('/execute', optionalAuth, async (req, res) => {
       last_reset_at:     hoursSinceReset > 24 ? new Date().toISOString() : wallet.last_reset_at,
     }).eq('id', body.walletId);
 
-    await supabase.from('audit_logs').insert(auditEntry);
+    const { data: insertedLog } = await supabase.from('audit_logs').insert(auditEntry).select().single();
+    if (insertedLog) broadcastAuditEvent(wallet.owner_id, insertedLog);
 
     res.json({
       status:       'APPROVED',
-      txSignature:  mockTxSig,
+      txSignature:  txSig,
       message:      '✅ Payment executed successfully',
       amountSol:    body.amountSol,
       recipient:    body.recipientAddress,
-      solscanUrl:   `https://solscan.io/tx/${mockTxSig}?cluster=devnet`,
+      solscanUrl:   `https://solscan.io/tx/${txSig}?cluster=devnet`,
     });
   } catch (err) {
     if (err.name === 'ZodError') return res.status(400).json({ error: err.errors });
