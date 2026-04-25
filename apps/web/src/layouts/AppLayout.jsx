@@ -1,102 +1,73 @@
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { LayoutDashboard, History, BookOpen, Settings2, Menu, X, ShieldCheck } from 'lucide-react'
 import { RevealCopy } from '../components/ui/reveal-copy'
 import logo from '../assets/logo.webp'
 
 const navItems = [
-  {
-    to: '/dashboard',
-    label: 'Dashboard',
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    to: '/audit',
-    label: 'Audit Log',
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-    ),
-  },
-  {
-    to: '/docs',
-    label: 'Docs',
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    ),
-  },
-  {
-    to: '/settings',
-    label: 'Developers',
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
+  { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+  { to: '/audit', label: 'Audit Log', icon: <History className="w-4 h-4" /> },
+  { to: '/docs', label: 'Docs', icon: <BookOpen className="w-4 h-4" /> },
+  { to: '/settings', label: 'Developers', icon: <Settings2 className="w-4 h-4" /> },
 ]
 
 function SidebarContent({ publicKey, onClose }) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white">
       {/* Logo */}
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-        <NavLink to="/" className="flex items-center gap-2" onClick={onClose}>
-          <img src={logo} alt="tryghost logo" className="h-9 w-auto object-contain" />
-          <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded ml-auto">devnet</span>
-        </NavLink>
-        {/* Close button – mobile only */}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="ml-3 lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
-            aria-label="Close sidebar"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
+      <div className="px-6 py-8 border-b border-zinc-100 mb-6">
+        <Link to="/" className="flex items-center gap-3 group">
+          <img src={logo} alt="ghost logo" className="h-8 w-auto object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-3" />
+          <span className="text-lg font-black tracking-[0.3em] text-zinc-900">GHOST</span>
+          <div className="px-2 py-0.5 rounded-full bg-emerald-50 text-[8px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100 ml-auto">
+            devnet
+          </div>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 space-y-1.5">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 px-3 mb-4">Operations</h3>
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             onClick={onClose}
-            className={({ isActive }) =>
-              isActive ? 'nav-item-active' : 'nav-item'
-            }
+            className={({ isActive }) => `
+              flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 group
+              ${isActive 
+                ? 'bg-zinc-900 text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.1)]' 
+                : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'}
+            `}
           >
-            {item.icon}
+            <span className={({ isActive }) => `transition-colors ${isActive ? 'text-emerald-400' : 'text-zinc-300 group-hover:text-emerald-500'}`}>
+              {item.icon}
+            </span>
             {item.label}
           </NavLink>
         ))}
       </nav>
 
       {/* Wallet area at bottom */}
-      <div className="px-3 py-4 border-t border-gray-100 space-y-2">
-        {publicKey && (
-          <div className="px-1">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Your Wallet</p>
-            <RevealCopy value={publicKey.toString()} chars={5} />
+      <div className="p-4 mt-auto">
+        <div className="bento-card p-5 bg-zinc-50/50 border-zinc-100 space-y-4">
+          {publicKey && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest leading-none">Your Wallet</p>
+                <ShieldCheck className="w-3 h-3 text-emerald-500" />
+              </div>
+              <div className="bg-white rounded-xl p-2 border border-zinc-100">
+                <RevealCopy value={publicKey.toString()} chars={6} />
+              </div>
+            </div>
+          )}
+          <div className="wallet-adapter-ghost-wrapper">
+            <WalletMultiButton className="!w-full !justify-center !text-[11px] !font-black !uppercase !tracking-widest !bg-zinc-900 !rounded-xl !h-11 shadow-sm hover:!bg-black transition-all" />
           </div>
-        )}
-        <WalletMultiButton className="!w-full !justify-center !text-sm" />
+        </div>
       </div>
     </div>
   )
@@ -107,22 +78,22 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-white overflow-hidden technical-grid selection:bg-emerald-100 selection:text-emerald-900">
 
       {/* ─── Mobile overlay backdrop ─────────────────────────────── */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-md lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* ─── Sidebar (desktop: static, mobile: slide-in drawer) ── */}
+      {/* ─── Sidebar ── */}
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-40
-          w-64 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col
-          transform transition-transform duration-300 ease-in-out
+          w-72 flex-shrink-0 bg-white border-r border-zinc-100 flex flex-col
+          transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1)
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0
         `}
@@ -134,26 +105,29 @@ export default function AppLayout() {
       </aside>
 
       {/* ─── Main Content ─────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        
         {/* Mobile topbar */}
-        <header className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
+        <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-xl border-b border-zinc-100 flex-shrink-0 z-20">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+            className="p-2 rounded-xl hover:bg-zinc-50 text-zinc-900 transition-colors"
             aria-label="Open sidebar"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <Menu className="w-5 h-5" />
           </button>
-          <img src={logo} alt="tryghost" className="h-8 w-auto object-contain" />
-          <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded ml-auto">devnet</span>
+          <Link to="/" className="flex items-center gap-2 group">
+            <img src={logo} alt="ghost" className="h-7 w-auto object-contain transition-transform duration-300 group-active:scale-95" />
+            <span className="text-sm font-black tracking-[0.2em] text-zinc-900">GHOST</span>
+          </Link>
+          <div className="w-5" /> {/* Spacer for symmetry */}
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto relative z-10 custom-scrollbar pt-8 md:pt-0">
+          <div className="h-full">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

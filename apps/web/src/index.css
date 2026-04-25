@@ -14,13 +14,35 @@
   }
 
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-white text-gray-900 selection:bg-emerald-100 selection:text-emerald-900;
     margin: 0;
     padding: 0;
+  }
+
+  .technical-grid {
+    background-image: 
+      linear-gradient(to right, #f4f4f5 1px, transparent 1px),
+      linear-gradient(to bottom, #f4f4f5 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .technical-grid-dark {
+    background-image: 
+      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 }
 
 @layer components {
+  /* ─── Premium Text Gradients ────────────────────────────────────────── */
+  .text-gradient-emerald {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-emerald-400 to-teal-500;
+  }
+
+  .glass-card-dark {
+    @apply bg-zinc-900/40 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)];
+  }
   /* ─── Corca-inspired Button Styles ─────────────────────────────────── */
   .btn-primary {
     @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm
@@ -143,6 +165,37 @@
   /* ─── Premium Text Gradients ────────────────────────────────────────── */
   .text-premium-green {
     @apply bg-clip-text text-transparent bg-gradient-to-br from-emerald-600 via-green-500 to-emerald-400;
+  }
+
+  /* ─── Bento & Premium Layouts ───────────────────────────────────────── */
+  .bento-card {
+    @apply bg-white border border-zinc-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] 
+           hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500 
+           rounded-[2rem] overflow-hidden;
+  }
+
+  .spectral-glow {
+    @apply relative overflow-hidden;
+  }
+
+  .spectral-glow::after {
+    content: '';
+    @apply absolute -inset-[100%] bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent 
+           -rotate-45 pointer-events-none transition-transform duration-1000 translate-x-[-100%];
+  }
+
+  .spectral-glow:hover::after {
+    @apply translate-x-[100%];
+  }
+
+  .editorial-heading {
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+
+  .font-serif-premium {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'SOFT' 100, 'WONK' 1;
   }
 }
 

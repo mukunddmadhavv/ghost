@@ -1,15 +1,11 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { SplitToEdit } from './ui/split-to-edit'
+import { ShieldCheck, Zap, Clock, Users, ArrowRight, Save, ShieldAlert } from 'lucide-react'
 
 /**
- * PolicyEditor — The main hackathon WOW component
+ * PolicyEditor — The Premium Boutique Control Center
  * Live-editable rules that enforce on-chain spending policies
- *
- * Props:
- *   policy: object  — current policy state
- *   walletId: string — agent wallet ID
- *   onSave: fn(updatedPolicy) — called after successful save
  */
 export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }) {
   const [policy, setPolicy] = useState(initialPolicy || {
@@ -68,246 +64,250 @@ export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }
         body: JSON.stringify({ policy }),
       })
       if (!res.ok) throw new Error('Failed to save policy')
-      toast.success('✅ Policy updated on-chain')
+      toast.success('✅ On-Chain Policy Synchronized')
       setHasChanges(false)
       onSave?.(policy)
     } catch (err) {
-      toast.error('Failed to save: ' + err.message)
+      toast.error('Encryption/Sync failed: ' + err.message)
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="card divide-y divide-gray-50">
+    <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-6 py-4">
-        <div>
-          <h3 className="font-bold text-gray-900 text-base">Policy Engine</h3>
-          <p className="text-xs text-gray-400 mt-0.5">Rules enforced on Solana devnet</p>
+      <div className="bento-card p-10 flex flex-col md:flex-row md:items-center justify-between gap-12 relative overflow-hidden">
+        <div className="absolute inset-0 technical-grid opacity-10 pointer-events-none" />
+        <div className="relative z-10 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+            <ShieldCheck className="w-3 h-3" />
+            V1 Security Standard
+          </div>
+          <h1 className="text-4xl font-black text-zinc-900 tracking-tighter leading-none editorial-heading">
+            Policy <span className="font-serif-premium italic font-light text-zinc-400">Engine.</span>
+          </h1>
+          <p className="text-sm text-zinc-500 font-medium tracking-tight max-w-sm">
+            Rules defined here are cryptographically enforced on the Solana blockchain.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="relative z-10 flex items-center gap-6">
           {hasChanges && (
-            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full font-medium">
-              Unsaved changes
-            </span>
+             <div className="text-right">
+                <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-1">Local State</p>
+                <p className="text-xs font-bold text-zinc-400">Unsaved Changes</p>
+             </div>
           )}
           <button
             onClick={handleSave}
             disabled={!hasChanges || saving}
-            className={`btn-primary text-xs py-2 ${(!hasChanges || saving) ? 'opacity-40 cursor-not-allowed' : ''}`}
+            className={`
+              group relative px-10 py-4 bg-zinc-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-zinc-200 transition-all duration-500
+              ${(!hasChanges || saving) ? 'opacity-30 cursor-not-allowed scale-95 grayscale' : 'hover:scale-105 active:scale-95'}
+            `}
           >
-            {saving ? (
-              <>
-                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Saving...
-              </>
-            ) : 'Save Policy'}
+            <span className="relative z-10 flex items-center gap-3">
+              {saving ? 'Synchronizing...' : 'Save Policy'}
+              {!saving && <Save className="w-3.5 h-3.5 text-emerald-400" />}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* ── 🚨 Emergency Pause ─────────────────────────────────────── */}
-      <div className="px-6 py-4">
-        <div className="policy-row !border-0 !py-0">
-          <div>
-            <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <span className={policy.emergencyPaused ? 'text-red-500' : 'text-gray-900'}>
-                🚨 Emergency Pause
-              </span>
-              {policy.emergencyPaused && (
-                <span className="badge-rejected">FROZEN</span>
-              )}
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Immediately freeze all agent spending
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ── 🚨 Emergency Pause ─────────────────────────────────────── */}
+        <div className={`bento-card p-8 transition-colors duration-500 ${policy.emergencyPaused ? 'bg-red-50/50 border-red-100' : 'bg-white'}`}>
+          <div className="flex items-start justify-between mb-8">
+            <div className="space-y-1">
+              <h3 className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${policy.emergencyPaused ? 'text-red-600' : 'text-zinc-400'}`}>01. Override Status</h3>
+              <p className="text-2xl font-black text-zinc-900 tracking-tighter uppercase">Freeze Protocol</p>
+              <p className="text-xs text-zinc-400 font-medium mt-2 max-w-[200px]">Immediately block all outbound transaction signals.</p>
+            </div>
+            <Toggle
+              value={policy.emergencyPaused}
+              onChange={v => update('emergencyPaused', v)}
+              activeColor="bg-red-600"
+            />
           </div>
-          <Toggle
-            value={policy.emergencyPaused}
-            onChange={v => update('emergencyPaused', v)}
-            activeColor="bg-red-500"
-          />
+          {policy.emergencyPaused && (
+            <div className="mt-8 p-6 rounded-2xl bg-white border border-red-100 flex items-start gap-4 animate-slide-up shadow-sm">
+              <ShieldAlert className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-red-600 font-bold leading-relaxed uppercase tracking-wider">
+                CRITICAL: The agent is currently frozen on-chain. All payment attempts will be REJECTED manually by the PDA logic.
+              </p>
+            </div>
+          )}
         </div>
-        {policy.emergencyPaused && (
-          <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-100 flex items-center gap-2">
-            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <p className="text-xs text-red-700 font-medium">
-              All payments are blocked. This is enforced on-chain — even server access cannot bypass this.
-            </p>
-          </div>
-        )}
-      </div>
 
-      {/* ── 💰 Daily Spend Limit ───────────────────────────────────── */}
-      <div className="px-6 py-5">
-        <div className="policy-row !border-0 !py-0 mb-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-900">💰 Daily Spend Limit</p>
-            <p className="text-xs text-gray-400 mt-0.5">Max SOL the agent can spend in 24 hours</p>
-          </div>
-          <span className="text-lg font-black text-gray-900">
-            <span className="highlight-pill">{policy.maxSpendPerDay} SOL</span>
-          </span>
-        </div>
-        {/* Slider */}
-        <div className="space-y-2">
-          <input
-            type="range"
-            min="0.001"
-            max="10"
-            step="0.001"
-            value={policy.maxSpendPerDay}
-            onChange={e => update('maxSpendPerDay', parseFloat(e.target.value))}
-            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-          />
-          <div className="flex justify-between text-[10px] text-gray-400 font-medium">
-            <span>0.001 SOL</span>
-            <span>5 SOL</span>
-            <span>10 SOL</span>
-          </div>
-        </div>
-        {/* Quick presets */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          {[0.1, 0.5, 1, 2, 5].map(v => (
-            <button
-              key={v}
-              onClick={() => update('maxSpendPerDay', v)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
-                policy.maxSpendPerDay === v
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-              }`}
-            >
-              {v} SOL
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── ⚠️ Approval Threshold ────────────────────────────────── */}
-      <div className="px-6 py-5">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-900">⚠️ Approval Threshold</p>
-            <p className="text-xs text-gray-400 mt-0.5">Ask human before payments above this amount</p>
-          </div>
-          <span className="highlight-pill">{policy.requireApprovalAbove} SOL</span>
-        </div>
-        <input
-          type="number"
-          min="0.001"
-          max="100"
-          step="0.01"
-          value={policy.requireApprovalAbove}
-          onChange={e => update('requireApprovalAbove', parseFloat(e.target.value) || 0.001)}
-          className="input max-w-[200px]"
-        />
-      </div>
-
-      {/* ── 🕐 Time Restriction ──────────────────────────────────── */}
-      <div className="px-6 py-5">
-        <div className="policy-row !border-0 !py-0 mb-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-900">🕐 Time Restriction</p>
-            <p className="text-xs text-gray-400 mt-0.5">Only allow payments during specific hours (UTC)</p>
-          </div>
-          <Toggle
-            value={policy.timeRestriction?.enabled || false}
-            onChange={v => updateTimeRestriction('enabled', v)}
-          />
-        </div>
-        {policy.timeRestriction?.enabled && (
-          <div className="mt-4 animate-fade-in">
-            <p className="text-xs text-gray-400 mb-3">Active payment window (UTC hours)</p>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex items-center gap-4">
-                <SplitToEdit
-                  label="Start"
-                  initialHours={policy.timeRestriction.startHour}
-                  onSave={v => updateTimeRestriction('startHour', v)}
-                />
-                <span className="text-gray-300 text-lg font-light mt-5">→</span>
-                <SplitToEdit
-                  label="End"
-                  initialHours={policy.timeRestriction.endHour}
-                  onSave={v => updateTimeRestriction('endHour', v)}
-                />
-              </div>
-              <div className="mt-2 sm:mt-5">
-                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1.5 rounded-lg font-semibold whitespace-nowrap">
-                  {String(policy.timeRestriction.startHour).padStart(2,'0')}:00 – {String(policy.timeRestriction.endHour).padStart(2,'0')}:00 UTC
-                </span>
-              </div>
+        {/* ── 💰 Daily Spend Limit ───────────────────────────────────── */}
+        <div className="bento-card p-8 bg-white space-y-8">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">02. Velocity Control</h3>
+              <p className="text-2xl font-black text-zinc-900 tracking-tighter uppercase">Daily Bound</p>
+              <p className="text-xs text-zinc-400 font-medium mt-2">Max SOL the agent can spend in 24 hours.</p>
+            </div>
+            <div className="text-right">
+              <span className="text-4xl font-black text-zinc-900 tracking-tighter">{policy.maxSpendPerDay.toFixed(2)}</span>
+              <span className="text-[10px] font-black text-zinc-300 ml-2 uppercase">SOL</span>
             </div>
           </div>
-        )}
+          
+          <div className="space-y-6">
+            <input
+              type="range"
+              min="0.001"
+              max="10"
+              step="0.001"
+              value={policy.maxSpendPerDay}
+              onChange={e => update('maxSpendPerDay', parseFloat(e.target.value))}
+              className="w-full h-1 bg-zinc-100 rounded-full appearance-none cursor-pointer accent-zinc-900"
+            />
+            <div className="flex flex-wrap gap-2">
+              {[0.1, 0.5, 1, 2, 5].map(v => (
+                <button
+                  key={v}
+                  onClick={() => update('maxSpendPerDay', v)}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                    policy.maxSpendPerDay === v
+                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      : 'bg-white text-zinc-400 border-zinc-100 hover:border-zinc-300'
+                  }`}
+                >
+                  {v} SOL
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── ⚠️ Approval Threshold ────────────────────────────────── */}
+        <div className="bento-card p-8 bg-white space-y-8">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">03. Human-in-the-Loop</h3>
+              <p className="text-2xl font-black text-zinc-900 tracking-tighter uppercase">Approval Gate</p>
+              <p className="text-xs text-zinc-400 font-medium mt-2">Require manual authorization for payments exceeding:</p>
+            </div>
+            <div className="relative min-w-[120px]">
+              <input
+                type="number"
+                min="0.001"
+                step="0.01"
+                value={policy.requireApprovalAbove}
+                onChange={e => update('requireApprovalAbove', parseFloat(e.target.value) || 0.001)}
+                className="w-full bg-zinc-50 border border-zinc-100 rounded-xl px-4 py-3 text-xl font-black text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all text-right"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-300 uppercase">SOL</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 🕐 Time Restriction ──────────────────────────────────── */}
+        <div className={`bento-card p-8 transition-colors duration-500 ${policy.timeRestriction?.enabled ? 'bg-zinc-50/50 border-zinc-100' : 'bg-white'}`}>
+          <div className="flex items-start justify-between mb-8">
+            <div className="space-y-1">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">04. Temporal Policy</h3>
+              <p className="text-2xl font-black text-zinc-900 tracking-tighter uppercase">Operating Hours</p>
+              <p className="text-xs text-zinc-400 font-medium mt-2">Enforce spending windows based on UTC time.</p>
+            </div>
+            <Toggle
+              value={policy.timeRestriction?.enabled || false}
+              onChange={v => updateTimeRestriction('enabled', v)}
+            />
+          </div>
+          {policy.timeRestriction?.enabled && (
+            <div className="space-y-8 animate-slide-up">
+              <div className="flex items-center gap-6">
+                <div className="flex-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-300 mb-3 ml-1">Daily Start</p>
+                  <input 
+                    type="range" min="0" max="23" value={policy.timeRestriction.startHour}
+                    onChange={v => updateTimeRestriction('startHour', parseInt(v.target.value))}
+                    className="w-full h-1 bg-zinc-100 rounded-full appearance-none accent-zinc-900" 
+                  />
+                </div>
+                <ArrowRight className="w-4 h-4 text-zinc-100 mt-6" />
+                <div className="flex-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-300 mb-3 ml-1">Daily End</p>
+                  <input 
+                    type="range" min="0" max="23" value={policy.timeRestriction.endHour}
+                    onChange={v => updateTimeRestriction('endHour', parseInt(v.target.value))}
+                    className="w-full h-1 bg-zinc-100 rounded-full appearance-none accent-zinc-900" 
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-center p-4 rounded-2xl bg-zinc-900 text-white text-[11px] font-black tracking-[0.2em] uppercase">
+                {String(policy.timeRestriction.startHour).padStart(2,'0')}:00 — {String(policy.timeRestriction.endHour).padStart(2,'0')}:00 UTC
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── 📋 Recipient Allowlist ───────────────────────────────── */}
-      <div className="px-6 py-5">
-        <div className="mb-4">
-          <p className="text-sm font-semibold text-gray-900 mb-0.5">
-            📋 Recipient Allowlist
-            {policy.allowedRecipients.length > 0 && (
-              <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-semibold">
-                {policy.allowedRecipients.length} addresses
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-gray-400">
-            {policy.allowedRecipients.length === 0
-              ? 'No restrictions — agent can pay anyone. Add addresses to enforce allowlist.'
-              : 'Agent can only pay these addresses.'}
-          </p>
-        </div>
+      <div className="bento-card p-10 bg-white">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-10 pb-8 border-b border-zinc-50">
+          <div className="space-y-1">
+            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">05. Trust Infrastructure</h3>
+            <p className="text-3xl font-black text-zinc-900 tracking-tighter uppercase leading-none">Recipient Allowlist</p>
+            <p className="text-sm text-zinc-500 font-medium tracking-tight mt-3">
+              {policy.allowedRecipients.length === 0
+                ? 'The protocol is currently open. Adding addresses will enforce a strict trust boundary.'
+                : 'The agent is cryptographically restricted to these verified addresses.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+             <div className="text-right">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Active Trusts</p>
+                <p className="text-xl font-black text-zinc-900 tracking-tighter uppercase leading-none">{policy.allowedRecipients.length}</p>
+             </div>
+          </div>
+        </header>
 
-        {/* Add address */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
           <input
             type="text"
-            placeholder="Paste Solana wallet address..."
+            placeholder="SOLANA_ADDRESS_SYNC_PDA..."
             value={newRecipient}
             onChange={e => setNewRecipient(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addRecipient()}
-            className="input flex-1 font-mono text-xs"
+            className="flex-1 bg-zinc-50 border border-zinc-100 rounded-2xl px-6 py-4 text-xs font-mono text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 transition-all"
           />
-          <button onClick={addRecipient} className="btn-secondary text-xs whitespace-nowrap">
-            + Add
+          <button 
+            onClick={addRecipient} 
+            className="px-10 py-4 bg-zinc-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-200"
+          >
+            Authorize Address
           </button>
         </div>
 
-        {/* Address list */}
-        {policy.allowedRecipients.length > 0 ? (
-          <div className="space-y-2">
-            {policy.allowedRecipients.map(addr => (
-              <div
-                key={addr}
-                className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 group"
-              >
-                <span className="font-mono text-xs text-gray-700 truncate max-w-[300px]">{addr}</span>
-                <button
-                  onClick={() => removeRecipient(addr)}
-                  className="text-gray-300 hover:text-red-500 transition-colors ml-3 flex-shrink-0"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {policy.allowedRecipients.map(addr => (
+            <div
+              key={addr}
+              className="flex items-center justify-between px-6 py-4 bg-zinc-50/50 rounded-2xl border border-zinc-100 group hover:border-zinc-900/10 transition-all duration-300"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="font-mono text-[10px] text-zinc-600 truncate">{addr}</span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 px-3 py-3 bg-amber-50 rounded-lg border border-amber-100">
-            <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <p className="text-xs text-amber-700">Open allowlist — agent can pay any address</p>
+              <button
+                onClick={() => removeRecipient(addr)}
+                className="text-zinc-200 hover:text-red-500 transition-colors ml-4 p-1 rounded-lg hover:bg-red-50"
+              >
+                <ArrowRight className="w-4 h-4 rotate-45" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {policy.allowedRecipients.length === 0 && (
+          <div className="flex items-center gap-4 px-6 py-6 bg-amber-50/50 rounded-2xl border border-amber-100/50 animate-fade-in text-center justify-center">
+            <p className="text-[11px] text-amber-700 font-bold uppercase tracking-widest leading-relaxed">
+              Open Protocol State — Unrestricted Transfers Enabled
+            </p>
           </div>
         )}
       </div>
@@ -316,20 +316,16 @@ export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }
 }
 
 /* ── Toggle Component ──────────────────────────────────────────────────────── */
-function Toggle({ value, onChange, activeColor = 'bg-blue-500' }) {
+function Toggle({ value, onChange, activeColor = 'bg-zinc-900' }) {
   return (
     <button
       role="switch"
       aria-checked={value}
       onClick={() => onChange(!value)}
-      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
-        transition-colors duration-200 ease-in-out focus:outline-none
-        ${value ? activeColor : 'bg-gray-200'}`}
+      className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${value ? activeColor : 'bg-zinc-100'}`}
     >
       <span
-        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow
-          transition duration-200 ease-in-out
-          ${value ? 'translate-x-5' : 'translate-x-0'}`}
+        className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-xl transition-transform duration-300 ease-in-out ${value ? 'translate-x-6' : 'translate-x-0'}`}
       />
     </button>
   )
