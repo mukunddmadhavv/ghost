@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useWallet, useConnection } from '@solana/wallet-adapter-react'
+import * as anchor from '@coral-xyz/anchor'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
+import { Buffer } from 'buffer'
+import toast from 'react-hot-toast'
 import PolicyEditor from '../../components/PolicyEditor.jsx'
 import { RevealCopy } from '../../components/ui/reveal-copy'
 import { Badge } from '../../components/ui/badge'
+
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer
+}
 
 const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
@@ -23,9 +32,12 @@ const DEMO_WALLET = {
 
 export default function WalletDetailPage() {
   const { id } = useParams()
+  const { connection } = useConnection()
+  const { publicKey, signTransaction, signAllTransactions } = useWallet()
   const [wallet, setWallet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('policy')
+  const [isDeploying, setIsDeploying] = useState(false)
 
   useEffect(() => {
     fetchWallet()
@@ -47,6 +59,69 @@ export default function WalletDetailPage() {
       setWallet(DEMO_WALLET)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function deployToChain() {
+    if (!publicKey || !signTransaction) {
+      toast.error('Please connect your wallet first')
+      return
+    }
+
+    setIsDeploying(true)
+    const tId = toast.loading(`Deploying ${wallet.agent_name} to Solana...`)
+
+    try {
+      const idlRes = await fetch(`${API}/api/idl`)
+      if (!idlRes.ok) throw new Error('Could not fetch Anchor IDL')
+      const idl = await idlRes.json()
+
+      const provider = new anchor.AnchorProvider(
+        connection,
+        {
+          publicKey: publicKey,
+          signTransaction: signTransaction,
+          signAllTransactions: signAllTransactions,
+        },
+        { commitment: 'confirmed' }
+      )
+
+      const program = new anchor.Program(idl, provider)
+
+      const [walletPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('ghost-wallet'),
+          publicKey.toBuffer(),
+          Buffer.from(wallet.agent_name),
+        ],
+        program.programId
+      )
+
+      const tx = await program.methods
+        .initializeWallet(
+          wallet.agent_name,
+          publicKey, // agent_pubkey
+          new anchor.BN(0.5 * 1e9),
+          [],
+          false,
+          0,
+          23,
+          new anchor.BN(1.0 * 1e9)
+        )
+        .accounts({
+          wallet: walletPda,
+          owner: publicKey,
+          system_program: SystemProgram.programId,
+        })
+        .rpc()
+
+      toast.success('Wallet initialized on-chain!', { id: tId })
+      setTimeout(() => fetchWallet(), 2000)
+    } catch (err) {
+      console.error(err)
+      toast.error(`Deployment failed: ${err.message}`, { id: tId })
+    } finally {
+      setIsDeploying(false)
     }
   }
 
@@ -76,29 +151,47 @@ export default function WalletDetailPage() {
       {/* ── Header ────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-8">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl flex-shrink-0">🤖</div>
+          <div className="w-12 h-12 rounded-xl bg-zinc-900 flex items-center justify-center text-2xl flex-shrink-0 shadow-lg shadow-zinc-200">🤖</div>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-black text-gray-900 truncate">{wallet.agent_name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-black text-gray-900 truncate tracking-tighter uppercase">{wallet.agent_name}</h1>
+              {wallet.on_chain ? (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100">
+                  <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Live</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-50 border border-zinc-100">
+                  <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Draft</span>
+                </div>
+              )}
+            </div>
             <div className="mt-1.5 flex flex-col gap-1.5">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">PDA:</span>
-                <RevealCopy value={wallet.pda_address} chars={8} />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">ID:</span>
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-100 font-mono text-[10px] text-gray-500">
-                  {wallet.id}
-                </div>
+                <RevealCopy value={wallet.pda_address} chars={8} className="bg-zinc-50/50" />
               </div>
             </div>
           </div>
         </div>
-        <div className="sm:text-right bg-white p-4 rounded-xl border border-gray-100 sm:border-0 sm:p-0">
-          <p className="text-xs text-gray-400 mb-0.5">Balance</p>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900">
-            {(wallet.balance_sol || 0).toFixed(4)}
-            <span className="text-sm sm:text-lg font-semibold text-gray-400 ml-1">SOL</span>
-          </p>
+
+        <div className="flex items-end gap-6">
+          {!wallet.on_chain && (
+            <button
+              onClick={deployToChain}
+              disabled={isDeploying}
+              className="px-6 py-2.5 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-zinc-200 hover:scale-105 active:scale-95 transition-all"
+            >
+              {isDeploying ? 'Deploying...' : 'Init Vault →'}
+            </button>
+          )}
+          <div className="sm:text-right bg-white p-4 rounded-xl border border-gray-100 sm:border-0 sm:p-0">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Balance</p>
+            <p className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter">
+              {(wallet.balance_sol || 0).toFixed(4)}
+              <span className="text-sm font-bold text-gray-400 ml-2 tracking-widest">SOL</span>
+            </p>
+          </div>
         </div>
       </div>
 
