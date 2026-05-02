@@ -72,7 +72,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const body = CreateWalletSchema.parse(req.body);
-    const programId = process.env.PROGRAM_ID || '3BKqA1CzLd27roSy4qi7T9S4LDdSVbndLasSb5dyMr6p';
+    const programId = process.env.PROGRAM_ID || 'HkWBDfjJnNMURCwJqyRCVfY8a8FT1MnKMdQVpFGke72b';
 
     let pdaAddress = 'pending_deploy';
     let pdaBump    = 0;
