@@ -94,22 +94,22 @@ async function fetchWalletOnChain(pdaAddressStr) {
     const pda = new PublicKey(pdaAddressStr);
     const wallet = await program.account.agentWallet.fetch(pda);
     
-    // Note: Anchor JS uses snake_case if defined in IDL
+    // Anchor JS automatically camelCases fields from the IDL
     return {
       owner: wallet.owner.toString(),
-      agentName: wallet.agent_name,
-      totalSpentToday: wallet.total_spent_today.toNumber() / LAMPORTS_PER_SOL,
-      lastResetAt: wallet.last_reset_at.toNumber(),
+      agentName: wallet.agentName,
+      totalSpentToday: wallet.totalSpentToday.toNumber() / LAMPORTS_PER_SOL,
+      lastResetAt: wallet.lastResetAt.toNumber(),
       policy: {
-        maxSpendPerDay: wallet.policy.max_spend_per_day.toNumber() / LAMPORTS_PER_SOL,
-        allowedRecipients: wallet.policy.allowed_recipients.map(p => p.toString()),
+        maxSpendPerDay: wallet.policy.maxSpendPerDay.toNumber() / LAMPORTS_PER_SOL,
+        allowedRecipients: wallet.policy.allowedRecipients.map(p => p.toString()),
         timeRestriction: {
-          enabled: wallet.policy.time_restriction.enabled,
-          startHour: wallet.policy.time_restriction.start_hour,
-          endHour: wallet.policy.time_restriction.end_hour,
+          enabled: wallet.policy.timeRestriction.enabled,
+          startHour: wallet.policy.timeRestriction.startHour,
+          endHour: wallet.policy.timeRestriction.endHour,
         },
-        requireApprovalAbove: wallet.policy.require_approval_above.toNumber() / LAMPORTS_PER_SOL,
-        emergencyPaused: wallet.policy.emergency_paused,
+        requireApprovalAbove: wallet.policy.requireApprovalAbove.toNumber() / LAMPORTS_PER_SOL,
+        emergencyPaused: wallet.policy.emergencyPaused,
       },
     };
   } catch (err) {
