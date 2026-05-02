@@ -4,10 +4,10 @@ const path = require('path');
 const fs   = require('fs');
 
 const RPC_URL    = process.env.SOLANA_RPC_URL  || 'https://api.devnet.solana.com';
-const PROGRAM_ID = process.env.PROGRAM_ID      || '3BKqA1CzLd27roSy4qi7T9S4LDdSVbndLasSb5dyMr6p';
+const PROGRAM_ID = process.env.PROGRAM_ID      || 'HkWBDfjJnNMURCwJqyRCVfY8a8FT1MnKMdQVpFGke72b';
 
-// Load IDL from built anchor artifact
-const IDL_PATH = path.join(__dirname, '../../../../anchor/target/idl/ghost_wallet.json');
+// Load IDL from bundled location (works on Render)
+const IDL_PATH = path.join(__dirname, '../idl/ghost_wallet.json');
 
 let _program = null;
 let _connection = null;
@@ -22,12 +22,18 @@ function getConnection() {
 function loadProgram() {
   if (_program) return _program;
 
-  if (!fs.existsSync(IDL_PATH)) {
-    console.warn('⚠️  Anchor IDL not found — on-chain calls will be skipped. Run: cd anchor && anchor build');
+  // Fallback for local development if bundled IDL missing
+  let actualPath = IDL_PATH;
+  if (!fs.existsSync(actualPath)) {
+    actualPath = path.join(__dirname, '../../../../anchor/target/idl/ghost_wallet.json');
+  }
+
+  if (!fs.existsSync(actualPath)) {
+    console.warn('⚠️  Anchor IDL not found — on-chain calls will be skipped.');
     return null;
   }
 
-  const idl = JSON.parse(fs.readFileSync(IDL_PATH, 'utf8'));
+  const idl = JSON.parse(fs.readFileSync(actualPath, 'utf8'));
   const connection = getConnection();
 
   // Load Relayer Wallet to pay for smart contract execution gas fees
@@ -87,11 +93,13 @@ async function fetchWalletOnChain(pdaAddressStr) {
   try {
     const pda = new PublicKey(pdaAddressStr);
     const wallet = await program.account.agentWallet.fetch(pda);
+    
+    // Note: Anchor JS uses snake_case if defined in IDL
     return {
       owner: wallet.owner.toString(),
-      agentName: wallet.agentName,
-      totalSpentToday: wallet.totalSpentToday.toNumber() / LAMPORTS_PER_SOL,
-      lastResetAt: wallet.lastResetAt.toNumber(),
+      agentName: wallet.agent_name,
+      totalSpentToday: wallet.total_spent_today.toNumber() / LAMPORTS_PER_SOL,
+      lastResetAt: wallet.last_reset_at.toNumber(),
       policy: {
         maxSpendPerDay: wallet.policy.maxSpendPerDay.toNumber() / LAMPORTS_PER_SOL,
         allowedRecipients: wallet.policy.allowedRecipients.map(p => p.toString()),
