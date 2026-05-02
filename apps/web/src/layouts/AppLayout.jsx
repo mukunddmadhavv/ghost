@@ -52,11 +52,11 @@ function SidebarContent({ publicKey, onClose }) {
 
       {/* Wallet area at bottom */}
       <div className="p-4 mt-auto">
-        <div className="bento-card p-5 bg-zinc-50/50 border-zinc-100 space-y-4">
+        <div className="rounded-2xl p-4 bg-zinc-50 border border-zinc-100 space-y-3">
           {publicKey && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest leading-none">Your Wallet</p>
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Your Wallet</p>
                 <ShieldCheck className="w-3 h-3 text-emerald-500" />
               </div>
               <div className="bg-white rounded-xl p-2 border border-zinc-100">
@@ -64,8 +64,8 @@ function SidebarContent({ publicKey, onClose }) {
               </div>
             </div>
           )}
-          <div className="wallet-adapter-ghost-wrapper">
-            <WalletMultiButton className="!w-full !justify-center !text-[11px] !font-black !uppercase !tracking-widest !bg-zinc-900 !rounded-xl !h-11 shadow-sm hover:!bg-black transition-all" />
+          <div className="sidebar-wallet-btn">
+            <WalletMultiButton />
           </div>
         </div>
       </div>
