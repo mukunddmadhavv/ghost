@@ -27,4 +27,4 @@ services:
       - key: PROGRAM_ID
         sync: false   # set after anchor deploy
       - key: CORS_ORIGIN
-        value: https://tryghost.netlify.app  # update after netlify deploy
+        value: https://tryghost.dev
