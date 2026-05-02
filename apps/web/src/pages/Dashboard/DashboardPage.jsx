@@ -178,6 +178,7 @@ export default function DashboardPage() {
       const tx = await program.methods
         .initializeWallet(
           wallet.agent_name,
+          publicKey, // agent_pubkey
           new anchor.BN(0.5 * 1e9),
           [],
           false,
@@ -188,7 +189,7 @@ export default function DashboardPage() {
         .accounts({
           wallet: walletPda,
           owner: publicKey,
-          systemProgram: SystemProgram.programId,
+          system_program: SystemProgram.programId,
         })
         .rpc()
 
