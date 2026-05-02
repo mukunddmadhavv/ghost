@@ -42,10 +42,14 @@ function SidebarContent({ publicKey, onClose }) {
                 : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'}
             `}
           >
-            <span className={({ isActive }) => `transition-colors ${isActive ? 'text-emerald-400' : 'text-zinc-300 group-hover:text-emerald-500'}`}>
-              {item.icon}
-            </span>
-            {item.label}
+            {({ isActive }) => (
+              <>
+                <span className={`transition-colors ${isActive ? 'text-emerald-400' : 'text-zinc-300 group-hover:text-emerald-500'}`}>
+                  {item.icon}
+                </span>
+                {item.label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

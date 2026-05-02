@@ -1,0 +1,366 @@
+{
+  "address": "HkWBDfjJnNMURCwJqyRCVfY8a8FT1MnKMdQVpFGke72b",
+  "metadata": {
+    "name": "ghost_wallet",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "emergency_pause",
+      "discriminator": [
+        21,
+        143,
+        27,
+        142,
+        200,
+        181,
+        210,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "wallet"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "execute_payment",
+      "discriminator": [
+        86,
+        4,
+        7,
+        7,
+        120,
+        139,
+        232,
+        139
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true
+        },
+        {
+          "name": "agent",
+          "signer": true,
+          "relations": [
+            "wallet"
+          ]
+        },
+        {
+          "name": "recipient",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_wallet",
+      "discriminator": [
+        213,
+        0,
+        239,
+        240,
+        73,
+        100,
+        188,
+        193
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  104,
+                  111,
+                  115,
+                  116,
+                  45,
+                  119,
+                  97,
+                  108,
+                  108,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "arg",
+                "path": "agent_name"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "agent_name",
+          "type": "string"
+        },
+        {
+          "name": "agent_pubkey",
+          "type": "pubkey"
+        },
+        {
+          "name": "max_spend_per_day",
+          "type": "u64"
+        },
+        {
+          "name": "allowed_recipients",
+          "type": {
+            "vec": "pubkey"
+          }
+        },
+        {
+          "name": "time_restriction_enabled",
+          "type": "bool"
+        },
+        {
+          "name": "start_hour",
+          "type": "u8"
+        },
+        {
+          "name": "end_hour",
+          "type": "u8"
+        },
+        {
+          "name": "require_approval_above",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_policy",
+      "discriminator": [
+        212,
+        245,
+        246,
+        7,
+        163,
+        151,
+        18,
+        57
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "wallet"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_policy",
+          "type": {
+            "defined": {
+              "name": "Policy"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AgentWallet",
+      "discriminator": [
+        127,
+        35,
+        180,
+        143,
+        201,
+        1,
+        100,
+        50
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "EmergencyPaused",
+      "msg": "EMERGENCY_PAUSED: Wallet is frozen"
+    },
+    {
+      "code": 6001,
+      "name": "DailyLimitExceeded",
+      "msg": "DAILY_LIMIT_EXCEEDED: Transaction exceeds daily limit"
+    },
+    {
+      "code": 6002,
+      "name": "RecipientNotAllowed",
+      "msg": "RECIPIENT_NOT_ALLOWED: Recipient is not in the allowlist"
+    },
+    {
+      "code": 6003,
+      "name": "TimeRestricted",
+      "msg": "TIME_RESTRICTED: Payments are outside allowed hours"
+    },
+    {
+      "code": 6004,
+      "name": "ApprovalRequired",
+      "msg": "APPROVAL_REQUIRED: Amount exceeds approval threshold"
+    },
+    {
+      "code": 6005,
+      "name": "UnauthorizedAgent",
+      "msg": "UNAUTHORIZED_AGENT: Only the designated agent can execute payments"
+    },
+    {
+      "code": 6006,
+      "name": "NameTooLong",
+      "msg": "NAME_TOO_LONG: Agent name must be 32 characters or fewer"
+    },
+    {
+      "code": 6007,
+      "name": "TooManyRecipients",
+      "msg": "TOO_MANY_RECIPIENTS: Allowed recipients list exceeds maximum limit of 5"
+    },
+    {
+      "code": 6008,
+      "name": "RentExemptionViolation",
+      "msg": "RENT_EXEMPTION_VIOLATION: Payment would drop wallet balance below rent exemption minimum"
+    }
+  ],
+  "types": [
+    {
+      "name": "AgentWallet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent_name",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "total_spent_today",
+            "type": "u64"
+          },
+          {
+            "name": "last_reset_at",
+            "type": "i64"
+          },
+          {
+            "name": "policy",
+            "type": {
+              "defined": {
+                "name": "Policy"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Policy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "max_spend_per_day",
+            "type": "u64"
+          },
+          {
+            "name": "allowed_recipients",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "time_restriction",
+            "type": {
+              "defined": {
+                "name": "TimeRestriction"
+              }
+            }
+          },
+          {
+            "name": "require_approval_above",
+            "type": "u64"
+          },
+          {
+            "name": "emergency_paused",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TimeRestriction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "enabled",
+            "type": "bool"
+          },
+          {
+            "name": "start_hour",
+            "type": "u8"
+          },
+          {
+            "name": "end_hour",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

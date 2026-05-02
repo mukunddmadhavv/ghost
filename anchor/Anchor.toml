@@ -5,10 +5,10 @@ package_manager = "npm"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-anchor = "3BKqA1CzLd27roSy4qi7T9S4LDdSVbndLasSb5dyMr6p"
-
 [programs.devnet]
+anchor = "HkWBDfjJnNMURCwJqyRCVfY8a8FT1MnKMdQVpFGke72b"
+
+[programs.localnet]
 anchor = "3BKqA1CzLd27roSy4qi7T9S4LDdSVbndLasSb5dyMr6p"
 
 [provider]
@@ -17,3 +17,5 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[hooks]

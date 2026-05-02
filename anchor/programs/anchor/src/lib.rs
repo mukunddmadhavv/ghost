@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("3BKqA1CzLd27roSy4qi7T9S4LDdSVbndLasSb5dyMr6p");
+declare_id!("HkWBDfjJnNMURCwJqyRCVfY8a8FT1MnKMdQVpFGke72b");
 
 #[program]
 pub mod ghost_wallet {
