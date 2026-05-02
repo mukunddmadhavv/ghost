@@ -180,7 +180,7 @@ export default function DocsPage() {
                 </div>
                 <Terminal 
                   isAnimated={true}
-                  command={`curl -X POST https://ghostapi-jn35.onrender.com/api/payments/execute \\
+                  command={`curl -X POST https://ghost-helj.onrender.com/api/payments/execute \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ghost_sk_live_v4h2...9z1" \\
   -d '{
@@ -206,7 +206,7 @@ export default function DocsPage() {
                   command={`const GHOST_SK = 'ghost_sk_live_v4h2...9z1';
 
 const executePayment = async (walletId, recipient, amount) => {
-  const response = await fetch('https://ghostapi-jn35.onrender.com/api/payments/execute', {
+  const response = await fetch('https://ghost-helj.onrender.com/api/payments/execute', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
