@@ -101,15 +101,19 @@ async function fetchWalletOnChain(pdaAddressStr) {
       totalSpentToday: wallet.total_spent_today.toNumber() / LAMPORTS_PER_SOL,
       lastResetAt: wallet.last_reset_at.toNumber(),
       policy: {
-        maxSpendPerDay: wallet.policy.maxSpendPerDay.toNumber() / LAMPORTS_PER_SOL,
-        allowedRecipients: wallet.policy.allowedRecipients.map(p => p.toString()),
-        timeRestriction: wallet.policy.timeRestriction,
-        requireApprovalAbove: wallet.policy.requireApprovalAbove.toNumber() / LAMPORTS_PER_SOL,
-        emergencyPaused: wallet.policy.emergencyPaused,
+        maxSpendPerDay: wallet.policy.max_spend_per_day.toNumber() / LAMPORTS_PER_SOL,
+        allowedRecipients: wallet.policy.allowed_recipients.map(p => p.toString()),
+        timeRestriction: {
+          enabled: wallet.policy.time_restriction.enabled,
+          startHour: wallet.policy.time_restriction.start_hour,
+          endHour: wallet.policy.time_restriction.end_hour,
+        },
+        requireApprovalAbove: wallet.policy.require_approval_above.toNumber() / LAMPORTS_PER_SOL,
+        emergencyPaused: wallet.policy.emergency_paused,
       },
     };
   } catch (err) {
-    console.warn('Could not fetch on-chain wallet:', err.message);
+    console.warn(`Could not fetch on-chain wallet for PDA ${pdaAddressStr}:`, err.message);
     return null;
   }
 }
