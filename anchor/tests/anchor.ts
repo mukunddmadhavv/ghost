@@ -14,6 +14,8 @@ describe("ghost-wallet", () => {
   let walletPda: PublicKey;
   let walletBump: number;
   const agentName = "test-bot";
+  const agentKeypair = anchor.web3.Keypair.generate();
+  const unauthorizedAgentKeypair = anchor.web3.Keypair.generate();
 
   before(async () => {
     [walletPda, walletBump] = await PublicKey.findProgramAddressSync(
@@ -26,6 +28,7 @@ describe("ghost-wallet", () => {
     await program.methods
       .initializeWallet(
         agentName,
+        agentKeypair.publicKey,
         new anchor.BN(0.5 * LAMPORTS_PER_SOL), // max_spend_per_day
         [],                                      // allowed_recipients (empty = open)
         false,                                   // time_restriction_enabled
@@ -42,6 +45,7 @@ describe("ghost-wallet", () => {
 
     const wallet = await program.account.agentWallet.fetch(walletPda);
     assert.equal(wallet.agentName, agentName);
+    assert.equal(wallet.agent.toBase58(), agentKeypair.publicKey.toBase58());
     assert.equal(wallet.policy.maxSpendPerDay.toNumber(), 0.5 * LAMPORTS_PER_SOL);
     assert.equal(wallet.policy.emergencyPaused, false);
     console.log("✅ Wallet initialized. PDA:", walletPda.toString());
@@ -60,13 +64,34 @@ describe("ghost-wallet", () => {
       .executePayment(new anchor.BN(0.001 * LAMPORTS_PER_SOL))
       .accounts({
         wallet: walletPda,
+        agent: agentKeypair.publicKey,
         recipient: recipient.publicKey,
       })
+      .signers([agentKeypair])
       .rpc();
 
     const balanceAfter = await provider.connection.getBalance(recipient.publicKey);
     assert.equal(balanceAfter - balanceBefore, 0.001 * LAMPORTS_PER_SOL);
     console.log("✅ Micropayment of 0.001 SOL succeeded!");
+  });
+
+  it("Rejects payment if signed by unauthorized agent", async () => {
+    const recipient = anchor.web3.Keypair.generate();
+    try {
+      await program.methods
+        .executePayment(new anchor.BN(0.001 * LAMPORTS_PER_SOL))
+        .accounts({
+          wallet: walletPda,
+          agent: unauthorizedAgentKeypair.publicKey,
+          recipient: recipient.publicKey,
+        })
+        .signers([unauthorizedAgentKeypair])
+        .rpc();
+      assert.fail("Should have thrown UnauthorizedAgent");
+    } catch (err: any) {
+      assert.include(err.message, "UnauthorizedAgent");
+      console.log("✅ Correctly rejected: UnauthorizedAgent");
+    }
   });
 
   it("Rejects payment that exceeds daily limit", async () => {
@@ -76,8 +101,10 @@ describe("ghost-wallet", () => {
         .executePayment(new anchor.BN(5 * LAMPORTS_PER_SOL)) // 5 SOL > 0.5 daily limit
         .accounts({
           wallet: walletPda,
+          agent: agentKeypair.publicKey,
           recipient: recipient.publicKey,
         })
+        .signers([agentKeypair])
         .rpc();
       assert.fail("Should have thrown DailyLimitExceeded");
     } catch (err: any) {
@@ -101,8 +128,10 @@ describe("ghost-wallet", () => {
         .executePayment(new anchor.BN(0.001 * LAMPORTS_PER_SOL))
         .accounts({
           wallet: walletPda,
+          agent: agentKeypair.publicKey,
           recipient: recipient.publicKey,
         })
+        .signers([agentKeypair])
         .rpc();
       assert.fail("Should have thrown EmergencyPaused");
     } catch (err: any) {

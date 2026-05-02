@@ -9,6 +9,7 @@ pub mod ghost_wallet {
     pub fn initialize_wallet(
         ctx: Context<InitializeWallet>,
         agent_name: String,
+        agent_pubkey: Pubkey,
         max_spend_per_day: u64, // Lamports
         allowed_recipients: Vec<Pubkey>,
         time_restriction_enabled: bool,
@@ -16,8 +17,12 @@ pub mod ghost_wallet {
         end_hour: u8,
         require_approval_above: u64, // Lamports
     ) -> Result<()> {
+        require!(agent_name.len() <= 32, ErrorCode::NameTooLong);
+        require!(allowed_recipients.len() <= 5, ErrorCode::TooManyRecipients);
+
         let wallet = &mut ctx.accounts.wallet;
         wallet.owner = ctx.accounts.owner.key();
+        wallet.agent = agent_pubkey;
         wallet.agent_name = agent_name;
         wallet.bump = ctx.bumps.wallet;
         wallet.total_spent_today = 0;
@@ -39,6 +44,8 @@ pub mod ghost_wallet {
     }
 
     pub fn update_policy(ctx: Context<UpdatePolicy>, new_policy: Policy) -> Result<()> {
+        require!(new_policy.allowed_recipients.len() <= 5, ErrorCode::TooManyRecipients);
+        
         let wallet = &mut ctx.accounts.wallet;
         wallet.policy = new_policy;
         Ok(())
@@ -99,6 +106,15 @@ pub mod ghost_wallet {
             ErrorCode::ApprovalRequired
         );
 
+        // 6. Rent Exemption Check
+        let rent = Rent::get()?;
+        let min_rent = rent.minimum_balance(wallet.to_account_info().data_len());
+        let current_balance = wallet.to_account_info().lamports();
+        require!(
+            current_balance.checked_sub(amount).unwrap_or(0) >= min_rent,
+            ErrorCode::RentExemptionViolation
+        );
+
         // Perform the transfer
         **wallet.to_account_info().try_borrow_mut_lamports()? -= amount;
         **ctx.accounts.recipient.to_account_info().try_borrow_mut_lamports()? += amount;
@@ -116,7 +132,8 @@ pub struct InitializeWallet<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 50 + 1 + 8 + 8 + 200, // Roughly: descr, owner, name, bump, spent, time, policy...
+        // space = 8 (disc) + 32 (owner) + 32 (agent) + 36 (agent_name) + 1 (bump) + 8 (spent) + 8 (time) + 8 (max_spend) + 164 (recipients) + 3 (time_res) + 8 (app_above) + 1 (paused) = ~309. We use 350 to be safe.
+        space = 350,
         seeds = [b"ghost-wallet", owner.key().as_ref(), agent_name.as_bytes()],
         bump
     )]
@@ -138,8 +155,12 @@ pub struct UpdatePolicy<'info> {
 
 #[derive(Accounts)]
 pub struct ExecutePayment<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        has_one = agent @ ErrorCode::UnauthorizedAgent
+    )]
     pub wallet: Account<'info, AgentWallet>,
+    pub agent: Signer<'info>,
     /// CHECK: This is safe because we just transfer lamports to it
     #[account(mut)]
     pub recipient: AccountInfo<'info>,
@@ -148,6 +169,7 @@ pub struct ExecutePayment<'info> {
 #[account]
 pub struct AgentWallet {
     pub owner: Pubkey,
+    pub agent: Pubkey,
     pub agent_name: String,
     pub bump: u8,
     pub total_spent_today: u64,
@@ -183,4 +205,12 @@ pub enum ErrorCode {
     TimeRestricted,
     #[msg("APPROVAL_REQUIRED: Amount exceeds approval threshold")]
     ApprovalRequired,
+    #[msg("UNAUTHORIZED_AGENT: Only the designated agent can execute payments")]
+    UnauthorizedAgent,
+    #[msg("NAME_TOO_LONG: Agent name must be 32 characters or fewer")]
+    NameTooLong,
+    #[msg("TOO_MANY_RECIPIENTS: Allowed recipients list exceeds maximum limit of 5")]
+    TooManyRecipients,
+    #[msg("RENT_EXEMPTION_VIOLATION: Payment would drop wallet balance below rent exemption minimum")]
+    RentExemptionViolation,
 }
