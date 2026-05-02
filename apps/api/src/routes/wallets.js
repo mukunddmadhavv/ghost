@@ -49,12 +49,22 @@ router.get('/', requireAuth, async (req, res) => {
 
     const walletsWithBalance = await Promise.allSettled(
       data.map(async (w) => {
-        const balance = await getBalance(w.pda_address).catch(() => 0);
-        let onChain = null;
-        if (w.pda_address !== 'pending_deploy') {
-          onChain = await fetchWalletOnChain(w.pda_address).catch(() => null);
+        // AUTO-FIX: Re-derive PDA to ensure it matches current PROGRAM_ID
+        const { pda: currentPda } = await deriveWalletPDA(w.owner_public_key, w.agent_name);
+        
+        let activePda = w.pda_address;
+        if (w.pda_address !== currentPda) {
+          console.log(`Syncing PDA for ${w.agent_name}: ${w.pda_address} -> ${currentPda}`);
+          await supabase.from('agent_wallets').update({ pda_address: currentPda }).eq('id', w.id);
+          activePda = currentPda;
         }
-        return { ...w, balance_sol: balance, on_chain: onChain };
+
+        const balance = await getBalance(activePda).catch(() => 0);
+        let onChain = null;
+        if (activePda !== 'pending_deploy') {
+          onChain = await fetchWalletOnChain(activePda).catch(() => null);
+        }
+        return { ...w, pda_address: activePda, balance_sol: balance, on_chain: onChain };
       })
     );
 
