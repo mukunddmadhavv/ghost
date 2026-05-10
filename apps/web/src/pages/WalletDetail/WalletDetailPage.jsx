@@ -216,7 +216,7 @@ export default function WalletDetailPage() {
       {activeTab === 'policy' && (
         <PolicyEditor
           policy={wallet.policy}
-          walletId={wallet.id}
+          wallet={wallet}
           onSave={(updatedPolicy) => {
             setWallet(w => ({ ...w, policy: updatedPolicy }))
           }}

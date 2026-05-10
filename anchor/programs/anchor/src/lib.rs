@@ -163,7 +163,7 @@ pub struct ExecutePayment<'info> {
     pub agent: Signer<'info>,
     /// CHECK: This is safe because we just transfer lamports to it
     #[account(mut)]
-    pub recipient: AccountInfo<'info>,
+    pub recipient: UncheckedAccount<'info>,
 }
 
 #[account]

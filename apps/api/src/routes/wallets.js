@@ -170,10 +170,6 @@ router.patch('/:id/policy', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
-    // TODO: When anchor deployed with funded wallet, also call update_policy on-chain
-    // const program = loadProgram();
-    // await program.methods.updatePolicy({...}).accounts({...}).rpc();
-
     res.json({ wallet: data, message: 'Policy updated ✅' });
   } catch (err) {
     if (err.name === 'ZodError') return res.status(400).json({ error: err.errors });

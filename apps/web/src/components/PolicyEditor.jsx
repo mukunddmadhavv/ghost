@@ -1,13 +1,21 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { useWallet, useConnection } from '@solana/wallet-adapter-react'
+import * as anchor from '@coral-xyz/anchor'
+import { PublicKey } from '@solana/web3.js'
+import { Buffer } from 'buffer'
 import { SplitToEdit } from './ui/split-to-edit'
 import { ShieldCheck, Zap, Clock, Users, ArrowRight, Save, ShieldAlert } from 'lucide-react'
+
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer
+}
 
 /**
  * PolicyEditor — The Premium Boutique Control Center
  * Live-editable rules that enforce on-chain spending policies
  */
-export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }) {
+export default function PolicyEditor({ policy: initialPolicy, wallet, onSave }) {
   const [policy, setPolicy] = useState(initialPolicy || {
     maxSpendPerDay: 0.5,
     allowedRecipients: [],
@@ -18,6 +26,9 @@ export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }
   const [newRecipient, setNewRecipient] = useState('')
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+
+  const { connection } = useConnection()
+  const { publicKey, signTransaction, signAllTransactions } = useWallet()
 
   function update(key, value) {
     setPolicy(p => ({ ...p, [key]: value }))
@@ -55,7 +66,50 @@ export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }
     try {
       const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
       const token = localStorage.getItem('ghost_token')
-      const res = await fetch(`${API}/api/wallets/${walletId}/policy`, {
+
+      if (wallet.on_chain) {
+        if (!publicKey || !signTransaction) {
+          throw new Error('Wallet not connected. Connect to save on-chain policy.')
+        }
+
+        const idlRes = await fetch(`${API}/api/idl`)
+        if (!idlRes.ok) throw new Error('Could not fetch Anchor IDL')
+        const idl = await idlRes.json()
+
+        const provider = new anchor.AnchorProvider(
+          connection,
+          {
+            publicKey: publicKey,
+            signTransaction: signTransaction,
+            signAllTransactions: signAllTransactions,
+          },
+          { commitment: 'confirmed' }
+        )
+        const program = new anchor.Program(idl, provider)
+        const walletPda = new PublicKey(wallet.pda_address)
+
+        const onChainPolicy = {
+          maxSpendPerDay: new anchor.BN(policy.maxSpendPerDay * 1e9),
+          allowedRecipients: policy.allowedRecipients.map(a => new PublicKey(a)),
+          timeRestriction: {
+            enabled: policy.timeRestriction.enabled,
+            startHour: policy.timeRestriction.startHour,
+            endHour: policy.timeRestriction.endHour,
+          },
+          requireApprovalAbove: new anchor.BN(policy.requireApprovalAbove * 1e9),
+          emergencyPaused: policy.emergencyPaused,
+        }
+
+        await program.methods
+          .updatePolicy(onChainPolicy)
+          .accounts({
+            wallet: walletPda,
+            owner: publicKey,
+          })
+          .rpc()
+      }
+
+      const res = await fetch(`${API}/api/wallets/${wallet.id}/policy`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -63,12 +117,12 @@ export default function PolicyEditor({ policy: initialPolicy, walletId, onSave }
         },
         body: JSON.stringify({ policy }),
       })
-      if (!res.ok) throw new Error('Failed to save policy')
-      toast.success('✅ On-Chain Policy Synchronized')
+      if (!res.ok) throw new Error('Failed to save policy to database')
+      toast.success(wallet.on_chain ? '✅ On-Chain Policy Synchronized' : '✅ Policy Saved Locally')
       setHasChanges(false)
       onSave?.(policy)
     } catch (err) {
-      toast.error('Encryption/Sync failed: ' + err.message)
+      toast.error('Sync failed: ' + err.message)
     } finally {
       setSaving(false)
     }
