@@ -110,6 +110,18 @@ export default function DashboardPage() {
     }
   }
 
+  function handleNewAgentClick() {
+    if (!connected) {
+      toast.error('Please connect your Solana wallet first')
+      return
+    }
+    if (!localStorage.getItem('ghost_token')) {
+      setNeedsLogin(true)
+      return
+    }
+    setShowCreate(true)
+  }
+
   async function createWallet() {
     if (!agentName.trim()) return
     setCreating(true)
@@ -127,14 +139,17 @@ export default function DashboardPage() {
           policy: {},
         }),
       })
-      if (res.ok) {
-        await fetchWallets()
-        setShowCreate(false)
-        setAgentName('')
-        toast.success('Agent saved to database! Click Deploy to Chain to activate.')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create agent')
       }
-    } catch (_) {
-      toast.error('Failed to create agent')
+      
+      await fetchWallets()
+      setShowCreate(false)
+      setAgentName('')
+      toast.success('Agent saved to database! Click Deploy to Chain to activate.')
+    } catch (err) {
+      toast.error(err.message || 'Failed to create agent')
     } finally {
       setCreating(false)
     }
@@ -221,7 +236,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <button 
-          onClick={() => setShowCreate(true)} 
+          onClick={handleNewAgentClick} 
           className="group relative px-8 py-3.5 bg-zinc-900 text-white rounded-full font-bold text-sm overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] flex items-center gap-2"
         >
           <span className="relative z-10 uppercase tracking-widest text-[11px] font-black">New Agent</span>
@@ -267,7 +282,7 @@ export default function DashboardPage() {
           <button onClick={fetchWallets} className="px-6 py-2 rounded-full bg-zinc-900 text-white text-xs font-bold hover:scale-105 transition-transform">Retry Sync</button>
         </div>
       ) : wallets.length === 0 ? (
-        <EmptyState onCreate={() => setShowCreate(true)} />
+        <EmptyState onCreate={handleNewAgentClick} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           {wallets.map((wallet, idx) => (
