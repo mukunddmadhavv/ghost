@@ -169,6 +169,16 @@ export default function DocsPage() {
           {/* API Reference */}
           <section id="api" className="mb-32">
             <h2 className="text-xs font-black uppercase tracking-[0.3em] text-zinc-400 mb-8 px-1">05. API Integration</h2>
+            
+            <div className="bento-card p-8 mb-10 border-emerald-100 bg-emerald-50/30 space-y-4">
+              <h3 className="text-sm font-black text-zinc-900 uppercase">Required Parameters</h3>
+              <ul className="text-xs text-zinc-600 font-medium leading-relaxed space-y-3 list-disc pl-4">
+                <li><strong>API Key</strong>: Replace <code>ghost_sk_live_...</code> with the key you generated in the <strong>Developers</strong> tab.</li>
+                <li><strong>Wallet ID</strong>: Replace <code>YOUR_WALLET_UUID</code> with the UUID found in your browser URL (e.g., <code>/wallet/1234abcd-...</code>) when viewing the agent in the dashboard.</li>
+                <li><strong>Recipient</strong>: If you have an Allowlist enabled, ensure the <code>recipientAddress</code> is authorized, or the Solana program will reject it.</li>
+              </ul>
+            </div>
+
             <div className="space-y-12">
               <div>
                 <div className="flex items-center justify-between mb-4">
