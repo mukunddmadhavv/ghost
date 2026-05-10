@@ -19,6 +19,36 @@ function getConnection() {
   return _connection;
 }
 
+let _wallet = null;
+
+function getRelayerWallet() {
+  if (_wallet) return _wallet;
+
+  _wallet = {
+    publicKey: PublicKey.default,
+    signTransaction: async (tx) => tx,
+    signAllTransactions: async (txs) => txs,
+  };
+
+  try {
+    if (process.env.RELAYER_KEYPAIR) {
+      const secret = JSON.parse(process.env.RELAYER_KEYPAIR);
+      const keypair = Keypair.fromSecretKey(new Uint8Array(secret));
+      _wallet = new anchor.Wallet(keypair);
+    } else {
+      const keypairPath = path.join(require('os').homedir(), '.config', 'solana', 'id.json');
+      if (fs.existsSync(keypairPath)) {
+        const secret = JSON.parse(fs.readFileSync(keypairPath, 'utf8'));
+        const keypair = Keypair.fromSecretKey(new Uint8Array(secret));
+        _wallet = new anchor.Wallet(keypair);
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Could not load local wallet, using dummy wallet.', err.message);
+  }
+  return _wallet;
+}
+
 function loadProgram() {
   if (_program) return _program;
 
@@ -37,22 +67,7 @@ function loadProgram() {
   const connection = getConnection();
 
   // Load Relayer Wallet to pay for smart contract execution gas fees
-  let wallet = {
-    publicKey: PublicKey.default,
-    signTransaction: async (tx) => tx,
-    signAllTransactions: async (txs) => txs,
-  };
-
-  try {
-    const keypairPath = path.join(require('os').homedir(), '.config', 'solana', 'id.json');
-    if (fs.existsSync(keypairPath)) {
-      const secret = JSON.parse(fs.readFileSync(keypairPath, 'utf8'));
-      const keypair = Keypair.fromSecretKey(new Uint8Array(secret));
-      wallet = new anchor.Wallet(keypair);
-    }
-  } catch (err) {
-    console.warn('⚠️ Could not load local wallet, using dummy wallet.', err.message);
-  }
+  const wallet = getRelayerWallet();
 
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: 'confirmed',
@@ -153,6 +168,7 @@ module.exports = {
   fetchWalletOnChain,
   getBalance,
   getTransaction,
+  getRelayerWallet,
   LAMPORTS_PER_SOL,
   PROGRAM_ID,
 };
