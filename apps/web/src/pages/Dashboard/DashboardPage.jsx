@@ -190,10 +190,13 @@ export default function DashboardPage() {
         program.programId
       )
 
+      // We must pass the Backend Relayer's Public Key as the authorized agent
+      const relayerPubKey = new PublicKey('CjHkrQk9yB5eBtUW5jbzpzGgPw7RZ2R9YXmkGAgdGUTA')
+
       const tx = await program.methods
         .initializeWallet(
           wallet.agent_name,
-          publicKey, // agent_pubkey
+          relayerPubKey, 
           new anchor.BN(0.5 * 1e9),
           [],
           false,
